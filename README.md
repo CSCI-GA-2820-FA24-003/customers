@@ -73,6 +73,6 @@ This repository is part of the New York University (NYU) masters class: **CSCI-G
 - always keep code formatted, VSCode extension `Prettier` is recommended.
 
 ## Workflow
-- Before working on a story, check if there are any stories in 'Review/QA'. If so, find the corresponding pull request and test it yourself. If everything works well, move the story to the 'Done' section
+- Before working on a story, check if there are any stories in 'Review/QA'. If so, find the corresponding pull request and test it yourself. If everything works well, move the story to the 'Done' section, merge the branch into master then delete it.
 - When you work on a story, always select the top story from the 'sprint backlog' without dependency on in progress stories, drag it into 'In Progress', and assign it to yourself. Pull the latest code from GitHub, create a new branch, and write your code on that branch.
 - When you finish working on a story, commit your branch to GitHub, create a new pull request, and link it to the corresponding story. Then, drag it into 'Review/QA'.
