@@ -22,9 +22,10 @@ TestCustomer API Service Test Suite
 import os
 import logging
 from unittest import TestCase
+from unittest.mock import patch, MagicMock
 from wsgi import app
 from service.common import status
-from service.models import db, Customer
+from service.models import db, Customer, DataValidationError
 from .factories import CustomerFactory
 
 DATABASE_URI = os.getenv(
@@ -70,6 +71,22 @@ class TestYourResourceService(TestCase):
     #  P L A C E   T E S T   C A S E S   H E R E
     ######################################################################
 
+    def _create_customers(self, count: int = 1) -> list:
+        """Factory method to create customers in bulk"""
+        customers = []
+        for _ in range(count):
+            test_customer = CustomerFactory()
+            response = self.client.post(BASE_URL, json=test_customer.serialize())
+            self.assertEqual(
+                response.status_code,
+                status.HTTP_201_CREATED,
+                "Could not create test customer",
+            )
+            new_customer = response.get_json()
+            test_customer.id = new_customer["id"]
+            customers.append(test_customer)
+        return customers
+
     def test_index(self):
         """It should call the home page"""
         resp = self.client.get("/")
@@ -97,14 +114,140 @@ class TestYourResourceService(TestCase):
         self.assertEqual(new_customer["address"], test_customer.address)
         self.assertEqual(new_customer["phone_number"], test_customer.phone_number)
 
-        # Check that the location header was correct
-        # TODO: uncomment these code after implementing get_customers
-        """
         response = self.client.get(location)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         new_customer = response.get_json()
         self.assertEqual(new_customer["name"], test_customer.name)
-        self.assertEqual(new_customer["category"], test_customer.category)
-        self.assertEqual(new_customer["available"], test_customer.available)
-        self.assertEqual(new_customer["gender"], test_customer.gender.name)
-        """
+        self.assertEqual(new_customer["email"], test_customer.email)
+        self.assertEqual(new_customer["address"], test_customer.address)
+        self.assertEqual(new_customer["phone_number"], test_customer.phone_number)
+
+    def test_get_customer_list(self):
+        """It should Get a list of Customers"""
+        self._create_customers(5)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 5)
+
+        # ----------------------------------------------------------
+
+    # TEST READ
+    # ----------------------------------------------------------
+    def test_get_customer(self):
+        """It should Get a single Customer"""
+        # get the id of a customer
+        test_customer = self._create_customers(1)[0]
+        response = self.client.get(f"{BASE_URL}/{test_customer.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["name"], test_customer.name)
+
+    def test_get_customer_not_found(self):
+        """It should not Get a Customer thats not found"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        logging.debug("Response data = %s", data)
+        self.assertIn("was not found", data["message"])
+
+    # ----------------------------------------------------------
+    # TEST UPDATE
+    # ----------------------------------------------------------
+    def test_update_customer(self):
+        """It should Update an existing Customer"""
+        # create a customer to update
+        test_customer = CustomerFactory()
+        response = self.client.post(BASE_URL, json=test_customer.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # update the customer
+        new_customer = response.get_json()
+        logging.debug(new_customer)
+        new_customer["email"] = "unknown"
+        response = self.client.put(
+            f"{BASE_URL}/{new_customer['id']}", json=new_customer
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_customer = response.get_json()
+        self.assertEqual(updated_customer["email"], "unknown")
+
+    # ----------------------------------------------------------
+    # TEST DELETE
+    # ----------------------------------------------------------
+    def test_delete_customer(self):
+        """It should Delete a Customer"""
+        test_customer = self._create_customers(1)[0]
+        response = self.client.delete(f"{BASE_URL}/{test_customer.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+        # make sure they are deleted
+        response = self.client.get(f"{BASE_URL}/{test_customer.id}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_non_existing_customer(self):
+        """It should Delete a Customer even if it doesn't exist"""
+        response = self.client.delete(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+
+    # ----------------------------------------------------------
+    # TEST SAD PATH
+    # ----------------------------------------------------------
+
+
+class TestSadPaths(TestCase):
+    """Test REST Exception Handling"""
+
+    def setUp(self):
+        """Runs before each test"""
+        self.client = app.test_client()
+
+    def test_method_not_allowed(self):
+        """It should not allow update without a customer id"""
+        response = self.client.put(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_create_customer_no_data(self):
+        """It should not Create a Customer with missing data"""
+        response = self.client.post(BASE_URL, json={})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_customer_no_content_type(self):
+        """It should not Create a Customer with no content type"""
+        response = self.client.post(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_customer_wrong_content_type(self):
+        """It should not Create a Customer with the wrong content type"""
+        response = self.client.post(BASE_URL, data="hello", content_type="text/html")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_customer_bad_email(self):
+        """It should not Create a Customer with bad available data"""
+        test_customer = CustomerFactory()
+        logging.debug(test_customer)
+        test_customer.phone_number = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        response = self.client.post(BASE_URL, json=test_customer.serialize())
+        print(response)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    ######################################################################
+    #  T E S T   M O C K S
+    ######################################################################
+
+    @patch("service.routes.Customer.find_by_name")
+    def test_bad_request(self, bad_request_mock):
+        """It should return a Bad Request error from Find By Name"""
+        bad_request_mock.side_effect = DataValidationError()
+        response = self.client.get(BASE_URL, query_string="name=fido")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("service.routes.Customer.find_by_name")
+    def test_mock_search_data(self, customer_find_mock):
+        """It should showing how to mock data"""
+        customer_find_mock.return_value = [
+            MagicMock(serialize=lambda: {"name": "fido"})
+        ]
+        response = self.client.get(BASE_URL, query_string="name=fido")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

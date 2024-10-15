@@ -65,13 +65,119 @@ def create_customers():
 
     # Return the location of the new Customer
     # TODO: uncomment this line after implementing get_customers
-    # location_url = url_for("get_customers", customer_id=customer.id, _external=True)
-    location_url = "url_for_get_customers"
+    location_url = url_for("get_customers", customer_id=customer.id, _external=True)
     return (
         jsonify(customer.serialize()),
         status.HTTP_201_CREATED,
         {"Location": location_url},
     )
+
+
+@app.route("/customers", methods=["GET"])
+def list_customers():
+    """Returns all of the Customers"""
+    app.logger.info("Request for customer list")
+
+    customers = []
+
+    # Parse any arguments from the query string
+    id = request.args.get("id")
+    name = request.args.get("name")
+    email = request.args.get("email")
+    phone_number = request.args.get("phone_number")
+    address = request.args.get("address")
+
+    if id:
+        app.logger.info("Find by name: %s", name)
+        customers = Customer.find_by_name(name)
+    else:
+        app.logger.info("Find all")
+        customers = Customer.all()
+
+    results = [customer.serialize() for customer in customers]
+    app.logger.info("Returning %d customers", len(results))
+    return jsonify(results), status.HTTP_200_OK
+
+
+@app.route("/customers/<int:customer_id>", methods=["GET"])
+def get_customers(customer_id):
+    """
+    Retrieve a single Customer
+
+    This endpoint will return a Customer based on it's id
+    """
+    app.logger.info("Request to Retrieve a customer with id [%s]", customer_id)
+
+    # Attempt to find the Customer and abort if not found
+    customer = Customer.find(customer_id)
+    if not customer:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Customer with id '{customer_id}' was not found.",
+        )
+
+    app.logger.info("Returning customer: %s", customer.name)
+    return jsonify(customer.serialize()), status.HTTP_200_OK
+
+
+######################################################################
+# CREATE A NEW PET
+######################################################################
+
+
+######################################################################
+# UPDATE AN EXISTING PET
+######################################################################
+@app.route("/customers/<int:customer_id>", methods=["PUT"])
+def update_customers(customer_id):
+    """
+    Update a Customer
+
+    This endpoint will update a Customer based the body that is posted
+    """
+    app.logger.info("Request to Update a customer with id [%s]", customer_id)
+    check_content_type("application/json")
+
+    # Attempt to find the Customer and abort if not found
+    customer = Customer.find(customer_id)
+    if not customer:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Customer with id '{customer_id}' was not found.",
+        )
+
+    # Update the Customer with the new data
+    data = request.get_json()
+    app.logger.info("Processing: %s", data)
+    customer.deserialize(data)
+
+    # Save the updates to the database
+    customer.update()
+
+    app.logger.info("Customer with ID: %d updated.", customer.id)
+    return jsonify(customer.serialize()), status.HTTP_200_OK
+
+
+######################################################################
+# DELETE A PET
+######################################################################
+@app.route("/customers/<int:customer_id>", methods=["DELETE"])
+def delete_customers(customer_id):
+    """
+    Delete a Customer
+
+    This endpoint will delete a Customer based the id specified in the path
+    """
+    app.logger.info("Request to Delete a customer with id [%s]", customer_id)
+
+    # Delete the Customer if it exists
+    customer = Customer.find(customer_id)
+    if customer:
+        app.logger.info("Customer with ID: %d found.", customer.id)
+        customer.delete()
+
+    app.logger.info("Customer with ID: %d delete complete.", customer_id)
+    return {}, status.HTTP_204_NO_CONTENT
 
 
 def check_content_type(content_type) -> None:

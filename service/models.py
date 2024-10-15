@@ -30,7 +30,7 @@ class Customer(db.Model):
     email = db.Column(
         db.String(255), nullable=False, unique=True
     )  # email, must be unique
-    phone_number = db.Column(db.String(20), nullable=False)  # phone number
+    phone_number = db.Column(db.String(15), nullable=False)  # phone number
     address = db.Column(db.String(255), nullable=True)  # address, could be null
 
     def __repr__(self):
@@ -55,6 +55,8 @@ class Customer(db.Model):
         Updates a Customer to the database
         """
         logger.info("Saving %s", self.name)
+        if not self.id:
+            raise DataValidationError("Update called with empty ID field")
         try:
             db.session.commit()
         except Exception as e:
