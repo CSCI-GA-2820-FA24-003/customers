@@ -66,6 +66,66 @@ def index():
 
 
 ######################################################################
+# LIST ALL PETS
+######################################################################
+@app.route("/customers", methods=["GET"])
+def list_customers():
+    """Returns all of the Customers"""
+    app.logger.info("Request for customer list")
+
+    customers = []
+
+    # Parse any arguments from the query string
+    # category = request.args.get("category")
+    name = request.args.get("name")
+    email = request.args.get("email")
+    phone_number = request.args.get("phone_number")
+    address = request.args.get("address")
+
+    if name:
+        app.logger.info("Find by name: %s", name)
+        customers = Customer.find_by_name(name)
+    elif email:
+        app.logger.info("Find by email: %s", email)
+        customers = Customer.find(email)
+    elif phone_number:
+        app.logger.info("Find by phone_number: %s", phone_number)
+        # create enum from string
+        customers = Customer.find(phone_number)
+    elif address:
+        app.logger.info("Find by address: %s", address)
+        customers = Customer.find(address)
+    else:
+        app.logger.info("Find all")
+        customers = Customer.all()
+
+    results = [customer.serialize() for customer in customers]
+    app.logger.info("Returning %d customers", len(results))
+    return jsonify(results), status.HTTP_200_OK
+
+
+@app.route("/customers/<int:customer_id>", methods=["GET"])
+def get_customers(customer_id):
+    """
+    Retrieve a single Customer
+
+    This endpoint will return a Customer based on it's id
+    """
+    app.logger.info("Request to Retrieve a customer with id [%s]", customer_id)
+
+    # Attempt to find the Customer and abort if not found
+    customer = Customer.find(customer_id)
+    if not customer:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Customer with id '{customer_id}' was not found.",
+        )
+
+    app.logger.info("Returning customer: %s", customer.name)
+    return jsonify(customer.serialize()), status.HTTP_200_OK
+
+
+######################################################################
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
 
@@ -90,13 +150,13 @@ def create_customers():
     app.logger.info("Customer with new id [%s] saved!", customer.id)
 
     # Return the location of the new Customer
+
     location_url = url_for("get_customers", customer_id=customer.id, _external=True)
     return (
         jsonify(customer.serialize()),
         status.HTTP_201_CREATED,
         {"Location": location_url},
     )
-
 
 @app.route("/customers", methods=["GET"])
 def list_customers():
@@ -184,7 +244,6 @@ def update_customers(customer_id):
     customer.update()
     app.logger.info("Customer with id [%s] updated!", customer.id)
     return jsonify(customer.serialize()), status.HTTP_200_OK
-
 
 def check_content_type(content_type) -> None:
     """Checks that the media type is correct"""

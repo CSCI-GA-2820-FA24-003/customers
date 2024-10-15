@@ -131,8 +131,7 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         self.assertEqual(len(data), 5)
 
-        # ----------------------------------------------------------
-
+    # ----------------------------------------------------------
     # TEST READ
     # ----------------------------------------------------------
     def test_get_customer(self):
@@ -177,6 +176,7 @@ class TestYourResourceService(TestCase):
         self.assertEqual(updated_customer["email"], "updated_email@example.com")
         self.assertEqual(updated_customer["phone_number"], "123-456-7890")
         self.assertEqual(updated_customer["address"], "123 Updated Address")
+
 
 
 class TestSadPaths(TestCase):
