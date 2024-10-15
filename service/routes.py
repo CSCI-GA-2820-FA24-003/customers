@@ -33,8 +33,34 @@ from service.common import status  # HTTP Status Codes
 @app.route("/")
 def index():
     """Root URL response"""
+
     return (
-        "Reminder: return some useful information in json format about the service here",
+        jsonify(
+            name="Customer REST API Service",
+            version="1.0",
+            description=(
+                "This is a RESTful service for managing customers. You can list, view, "
+                "create, update, and delete customer information."
+            ),
+            paths={
+                "list_customers": {
+                    "method": "GET",
+                    "url": url_for("list_customers", _external=True),
+                },
+                "get_customer": {
+                    "method": "GET",
+                    "url": url_for("get_customers", customer_id=1, _external=True),
+                },
+                "create_customer": {
+                    "method": "POST",
+                    "url": url_for("create_customers", _external=True),
+                },
+                "update_customer": {
+                    "method": "PUT",
+                    "url": url_for("update_customers", customer_id=1, _external=True),
+                },
+            },
+        ),
         status.HTTP_200_OK,
     )
 
@@ -80,10 +106,23 @@ def list_customers():
     customers = []
 
     name = request.args.get("name")
+    email = request.args.get("email")
+    phone_number = request.args.get("phone_number")
+    address = request.args.get("address")
 
     if name:
         app.logger.info("Find by name: %s", name)
         customers = Customer.find_by_name(name)
+    elif email:
+        app.logger.info("Find by email: %s", email)
+        customers = Customer.find_by_email(email)
+    elif phone_number:
+        app.logger.info("Find by phone_number: %s", phone_number)
+        # create enum from string
+        customers = Customer.find_by_phone_number(phone_number)
+    elif address:
+        app.logger.info("Find by address: %s", address)
+        customers = Customer.find_by_address(address)
     else:
         app.logger.info("Find all")
         customers = Customer.all()
@@ -126,13 +165,11 @@ def get_customers(customer_id):
 def update_customers(customer_id):
     """
     Update a Customer
-
     This endpoint will update a Customer based the body that is posted
     """
     app.logger.info("Request to Update a customer with id [%s]", customer_id)
     check_content_type("application/json")
 
-    # Attempt to find the Customer and abort if not found
     customer = Customer.find(customer_id)
     if not customer:
         abort(
@@ -140,38 +177,13 @@ def update_customers(customer_id):
             f"Customer with id '{customer_id}' was not found.",
         )
 
-    # Update the Customer with the new data
     data = request.get_json()
     app.logger.info("Processing: %s", data)
     customer.deserialize(data)
 
-    # Save the updates to the database
     customer.update()
-
-    app.logger.info("Customer with ID: %d updated.", customer.id)
+    app.logger.info("Customer with id [%s] updated!", customer.id)
     return jsonify(customer.serialize()), status.HTTP_200_OK
-
-
-######################################################################
-# DELETE A PET
-######################################################################
-@app.route("/customers/<int:customer_id>", methods=["DELETE"])
-def delete_customers(customer_id):
-    """
-    Delete a Customer
-
-    This endpoint will delete a Customer based the id specified in the path
-    """
-    app.logger.info("Request to Delete a customer with id [%s]", customer_id)
-
-    # Delete the Customer if it exists
-    customer = Customer.find(customer_id)
-    if customer:
-        app.logger.info("Customer with ID: %d found.", customer.id)
-        customer.delete()
-
-    app.logger.info("Customer with ID: %d delete complete.", customer_id)
-    return {}, status.HTTP_204_NO_CONTENT
 
 
 def check_content_type(content_type) -> None:

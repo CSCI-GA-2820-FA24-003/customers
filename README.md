@@ -71,8 +71,10 @@ This repository is part of the New York University (NYU) masters class: **CSCI-G
 ## Code Standard
 - use snake_case, like `this_is_snake_case_variable`.
 - always keep code formatted, VSCode extension `Prettier` is recommended.
+- Run `make lint` and aim for the **highest possible score**. By the end of the sprint, the code should achieve a rating of **10.00/10**, and the test coverage should reach at least 95%.
 
 ## Workflow
-- Before working on a story, check if there are any stories in 'Review/QA'. If so, find the corresponding pull request and test it yourself. If everything works well, move the story to the 'Done' section
+- Before working on a story, check if there are any stories in 'Review/QA'. If so, find the corresponding pull request and test it yourself. If everything works well, move the story to the 'Done' section, **and delete the branch**.
 - When you work on a story, always select the top story from the 'sprint backlog' without dependency on in progress stories, drag it into 'In Progress', and assign it to yourself. Pull the latest code from GitHub, create a new branch, and write your code on that branch.
 - When you finish working on a story, commit your branch to GitHub, create a new pull request, and link it to the corresponding story. Then, drag it into 'Review/QA'.
+- **Add unit tests for your stories, covering both happy and sad paths.**

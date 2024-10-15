@@ -71,7 +71,7 @@
 	},
 	"postCreateCommand": "bash /app/.devcontainer/scripts/post-install.sh",
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// Use 'forwardPorts' to make a list of ports inside the container phone_number locally.
 	"forwardPorts": [8080],
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
