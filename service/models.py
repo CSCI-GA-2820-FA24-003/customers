@@ -26,12 +26,12 @@ class Customer(db.Model):
     # Table Schema
     ##################################################
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(63))
+    name = db.Column(db.String(63), nullable=False)
     email = db.Column(
         db.String(255), nullable=False, unique=True
     )  # email, must be unique
-    phone_number = db.Column(db.String(15), nullable=False)  # phone number
-    address = db.Column(db.String(255), nullable=True)  # address, could be null
+    phone_number = db.Column(db.String(25), nullable=False)  # phone number
+    address = db.Column(db.String(255), nullable=False)  # address, could be null
 
     def __repr__(self):
         return f"<Customer {self.name} id=[{self.id}]>"
@@ -96,7 +96,7 @@ class Customer(db.Model):
             self.name = data["name"]
             self.email = data["email"]
             self.phone_number = data["phone_number"]
-            self.address = data.get("address", "")
+            self.address = data["address"]
         except AttributeError as error:
             raise DataValidationError("Invalid attribute: " + error.args[0]) from error
         except KeyError as error:

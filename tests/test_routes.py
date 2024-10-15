@@ -227,7 +227,8 @@ class TestSadPaths(TestCase):
         """It should not Create a Customer with bad available data"""
         test_customer = CustomerFactory()
         logging.debug(test_customer)
-        test_customer.phone_number = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        test_customer.name = ""
+        test_customer.phone_number = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         response = self.client.post(BASE_URL, json=test_customer.serialize())
         print(response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

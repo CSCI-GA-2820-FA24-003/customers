@@ -64,7 +64,6 @@ def create_customers():
     app.logger.info("Customer with new id [%s] saved!", customer.id)
 
     # Return the location of the new Customer
-    # TODO: uncomment this line after implementing get_customers
     location_url = url_for("get_customers", customer_id=customer.id, _external=True)
     return (
         jsonify(customer.serialize()),
@@ -80,14 +79,9 @@ def list_customers():
 
     customers = []
 
-    # Parse any arguments from the query string
-    id = request.args.get("id")
     name = request.args.get("name")
-    email = request.args.get("email")
-    phone_number = request.args.get("phone_number")
-    address = request.args.get("address")
 
-    if id:
+    if name:
         app.logger.info("Find by name: %s", name)
         customers = Customer.find_by_name(name)
     else:
